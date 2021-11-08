@@ -1,0 +1,22 @@
+*******Patient Information*******
+  Name                    : podlasz^^^^
+  Access Number           : 
+  Sex                     : O
+  Age                     : 0Y
+  Register Date           : 24.06.2021
+  Register Time           : 18:20:58
+  Exposure Date           : 24.06.2021
+  Exposure Time           : 18:28:07
+  Body Part               : ABDOMEN
+  Referring Physician     : 
+
+*******Image  Information*******
+  Width                   : 2312
+  Height                  : 2641
+  Alloc Bits              : 16
+  Using Bits              : 14
+
+*******Hospital Information*******
+  Name                    : 
+  Address                 : 
+  PerformPhysician        : admin

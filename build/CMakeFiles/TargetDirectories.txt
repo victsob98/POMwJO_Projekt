@@ -1,0 +1,3 @@
+F:/Projekt-pomwjo/build/CMakeFiles/POMwJO_Projekt.dir
+F:/Projekt-pomwjo/build/CMakeFiles/ALL_BUILD.dir
+F:/Projekt-pomwjo/build/CMakeFiles/ZERO_CHECK.dir
