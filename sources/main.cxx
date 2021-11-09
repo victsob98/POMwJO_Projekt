@@ -5,33 +5,43 @@
 #include <itkImageFileWriter.h>
 #include <itkJPEGImageIOFactory.h>
 #include <itkJPEGImageIO.h>
-
+#include <itkRGBToLuminanceImageFilter.h>
 int main() // glowna funkcja programu
 {      
 	try {
 		
 
-		using PixelType = signed short;
-		using ImageType = itk::Image<PixelType, 2>;
-		using ReaderType = itk::ImageFileReader<ImageType>;
-		using WriterType = itk::ImageFileWriter<ImageType>;
 
 		std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/brzusio1.jpg";
 		std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/brzusio1kopia.jpg";
 
+		
+
+		using ComponentType = unsigned char;
+		using InputPixelType = itk::RGBPixel<ComponentType>;
+		using InputImageType = itk::Image<InputPixelType, 2>;
+		
+		using ReaderType = itk::ImageFileReader<InputImageType>;
 		ReaderType::Pointer reader = ReaderType::New();
-		reader->SetFileName(sciezkaWe);
+
+
+	    reader->SetFileName(sciezkaWe);
 		reader->Update();
 
-		ImageType::Pointer image = reader->GetOutput();
+		
 
-	/*	WriterType::Pointer writer = WriterType::New();
-		writer->SetInput(image);
+		using OutputPixelType = unsigned char;
+		using OutputImageType = itk::Image<OutputPixelType, 2>;
 
+		using FilterType = itk::RGBToLuminanceImageFilter<InputImageType, OutputImageType>;
+		FilterType::Pointer filter = FilterType::New();
+		filter->SetInput(reader->GetOutput());
+
+		using WriterType = itk::ImageFileWriter<OutputImageType>;
+		WriterType::Pointer writer = WriterType::New();
 		writer->SetFileName(sciezkaWy);
-		writer->Update();*/
-
-
+		writer->SetInput(filter->GetOutput());
+		writer->Update();
 
 	
 	}
