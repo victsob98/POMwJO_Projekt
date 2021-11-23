@@ -6,29 +6,34 @@
 #include <itkJPEGImageIOFactory.h>
 #include <itkJPEGImageIO.h>
 #include <itkRGBToLuminanceImageFilter.h>
+#include <itkIntensityWindowingImageFilter.h>
+#include <itkThresholdImageFilter.h>
+
+
+
 int main() // glowna funkcja programu
-{      
+{	      
 	try {
-		
+
 
 
 		std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/brzusio1.jpg";
-		std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/brzusio1kopia.jpg";
+		std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/brzusio2kopiaProg2.tiff";
 
-		
+
 
 		using ComponentType = unsigned char;
 		using InputPixelType = itk::RGBPixel<ComponentType>;
 		using InputImageType = itk::Image<InputPixelType, 2>;
-		
+
 		using ReaderType = itk::ImageFileReader<InputImageType>;
 		ReaderType::Pointer reader = ReaderType::New();
 
 
-	    reader->SetFileName(sciezkaWe);
+		reader->SetFileName(sciezkaWe);
 		reader->Update();
 
-		
+
 
 		using OutputPixelType = unsigned char;
 		using OutputImageType = itk::Image<OutputPixelType, 2>;
@@ -36,6 +41,24 @@ int main() // glowna funkcja programu
 		using FilterType = itk::RGBToLuminanceImageFilter<InputImageType, OutputImageType>;
 		FilterType::Pointer filter = FilterType::New();
 		filter->SetInput(reader->GetOutput());
+
+		using FilterTypeW =itk::IntensityWindowingImageFilter<OutputImageType, OutputImageType>;
+	    FilterTypeW::Pointer filter2 = FilterTypeW::New();
+		//filter2->SetInput(reader->GetOutput());
+		//filter2->SetWindowMaximum(200);
+		//filter2->SetWindowMinimum(128);
+		//filter2->SetOutputMaximum(155);
+	 //   filter2->SetOutputMinimum(0);
+		filter2->SetWindowLevel(255 + 25, (255 - 25) / 2);
+		filter2->SetInput(filter->GetOutput());
+
+			using FilterTypee = itk::ThresholdImageFilter<OutputImageType>;
+			FilterTypee::Pointer filter1 = FilterTypee::New();
+			filter1->SetLower(90);
+			filter1->SetInput(filter->GetOutput());
+			filter1->SetOutsideValue(-1048);
+
+
 
 		using WriterType = itk::ImageFileWriter<OutputImageType>;
 		WriterType::Pointer writer = WriterType::New();
