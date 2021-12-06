@@ -8,64 +8,106 @@
 #include <itkRGBToLuminanceImageFilter.h>
 #include <itkIntensityWindowingImageFilter.h>
 #include <itkThresholdImageFilter.h>
-
+#include <itkNormalizeImageFilter.h>
+#include <itkMinimumMaximumImageFilter.h>
+#include <itkMinimumMaximumImageCalculator.h>
+#include <itkStatisticsRelabelImageFilter.h>
+#include <itkOtsuMultipleThresholdsImageFilter.h>
 
 
 int main() // glowna funkcja programu
 {	      
 	try {
 
-
-
-		std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/brzusio1.jpg";
-		std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/brzusio2kopiaProg2.tiff";
-
-
-
-		using ComponentType = unsigned char;
-		using InputPixelType = itk::RGBPixel<ComponentType>;
-		using InputImageType = itk::Image<InputPixelType, 2>;
-
-		using ReaderType = itk::ImageFileReader<InputImageType>;
-		ReaderType::Pointer reader = ReaderType::New();
-
-
-		reader->SetFileName(sciezkaWe);
-		reader->Update();
+		int i;
+		for (i = 1; i <= 17; i++)
+		{
+			//Powtarzany blok instrukcji
+			std::string s = std::to_string(i);
 
 
 
-		using OutputPixelType = unsigned char;
-		using OutputImageType = itk::Image<OutputPixelType, 2>;
-
-		using FilterType = itk::RGBToLuminanceImageFilter<InputImageType, OutputImageType>;
-		FilterType::Pointer filter = FilterType::New();
-		filter->SetInput(reader->GetOutput());
-
-		using FilterTypeW =itk::IntensityWindowingImageFilter<OutputImageType, OutputImageType>;
-	    FilterTypeW::Pointer filter2 = FilterTypeW::New();
-		//filter2->SetInput(reader->GetOutput());
-		//filter2->SetWindowMaximum(200);
-		//filter2->SetWindowMinimum(128);
-		//filter2->SetOutputMaximum(155);
-	 //   filter2->SetOutputMinimum(0);
-		filter2->SetWindowLevel(255 + 25, (255 - 25) / 2);
-		filter2->SetInput(filter->GetOutput());
-
-			using FilterTypee = itk::ThresholdImageFilter<OutputImageType>;
-			FilterTypee::Pointer filter1 = FilterTypee::New();
-			filter1->SetLower(90);
-			filter1->SetInput(filter->GetOutput());
-			filter1->SetOutsideValue(-1048);
+			std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/"+s+".jpg";
+			std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/kopia"+s+".tiff";
 
 
 
-		using WriterType = itk::ImageFileWriter<OutputImageType>;
-		WriterType::Pointer writer = WriterType::New();
-		writer->SetFileName(sciezkaWy);
-		writer->SetInput(filter->GetOutput());
-		writer->Update();
+			using ComponentType = unsigned char;
+			using InputPixelType = itk::RGBPixel<ComponentType>;
+			using RGBImageType = itk::Image<InputPixelType, 2>;
 
+			using ReaderType = itk::ImageFileReader<RGBImageType>;
+			ReaderType::Pointer reader = ReaderType::New();
+
+
+			reader->SetFileName(sciezkaWe);
+			reader->Update();
+
+			using OutputPixelType = unsigned char;
+			using GrayscaleImageType = itk::Image<OutputPixelType, 2>;
+
+			using FilterType = itk::RGBToLuminanceImageFilter<RGBImageType, GrayscaleImageType>;
+			FilterType::Pointer filter = FilterType::New();
+			filter->SetInput(reader->GetOutput());
+		
+			
+			using TresholdFilterType = itk::ThresholdImageFilter<GrayscaleImageType>;
+			 TresholdFilterType::Pointer tresholdFilter = TresholdFilterType::New();
+			 tresholdFilter->SetInput(filter->GetOutput());
+			 tresholdFilter->SetUpper(255*0.68);
+			 //filter->SetUpper(300);
+			 tresholdFilter->SetOutsideValue(0); // zamien na -1024
+			 //filter->ThresholdAbove(300);
+			 //filter->ThresholdBelow(100);
+			//filter->ThresholdOutside(100,300)
+
+		
+			 
+			using MinMaxFilterType = itk::MinimumMaximumImageCalculator<GrayscaleImageType>;
+			MinMaxFilterType::Pointer minmaxFilter = MinMaxFilterType::New();
+			minmaxFilter->SetImage(filter->GetOutput());
+			
+			std::cout << minmaxFilter->GetMaximum();
+
+			using WriterType = itk::ImageFileWriter<GrayscaleImageType>;
+			WriterType::Pointer writer = WriterType::New();
+			writer->SetFileName(sciezkaWy);
+			writer->SetInput(tresholdFilter->GetOutput());
+			writer->Update();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			//using FilterTypeW = itk::IntensityWindowingImageFilter<OutputImageType, OutputImageType>;
+			//FilterTypeW::Pointer filter2 = FilterTypeW::New();
+			////filter2->SetInput(reader->GetOutput());
+			////filter2->SetWindowMaximum(200);
+			////filter2->SetWindowMinimum(128);
+			////filter2->SetOutputMaximum(155);
+		 ////   filter2->SetOutputMinimum(0);
+			//filter2->SetWindowLevel(255 + 25, (255 - 25) / 2);
+			//filter2->SetInput(filter->GetOutput());
+
+			//using FilterTypee = itk::ThresholdImageFilter<OutputImageType>;
+			//FilterTypee::Pointer filter1 = FilterTypee::New();
+			//filter1->SetLower(90);
+			//filter1->SetInput(filter->GetOutput());
+			//filter1->SetOutsideValue(-1048);
+
+
+
+			
+		}
 	
 	}
 	catch (itk::ExceptionObject& ex) {
