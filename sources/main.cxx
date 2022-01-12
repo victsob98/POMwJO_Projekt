@@ -13,6 +13,10 @@
 #include <itkMinimumMaximumImageCalculator.h>
 #include <itkStatisticsRelabelImageFilter.h>
 #include <itkOtsuMultipleThresholdsImageFilter.h>
+#include <itkMedianImageFilter.h>
+#include <itkImageToHistogramFilter.h>
+#include <itkBinaryThresholdImageFilter.h>
+#include <itkRescaleIntensityImageFilter.h>
 
 
 int main() // glowna funkcja programu
@@ -29,6 +33,7 @@ int main() // glowna funkcja programu
 
 			std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/"+s+".jpg";
 			std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/kopia"+s+".tiff";
+			std::string sciezkaWyhistogram = "F:/Projekt-pomwjo/wyniki/histogram" + s + ".tiff";
 
 
 
@@ -60,22 +65,46 @@ int main() // glowna funkcja programu
 			 //filter->ThresholdAbove(300);
 			 //filter->ThresholdBelow(100);
 			//filter->ThresholdOutside(100,300)
+			 //GrayscaleImageType::SizeType indexRadius;
 
-		
-			 
-			using MinMaxFilterType = itk::MinimumMaximumImageCalculator<GrayscaleImageType>;
-			MinMaxFilterType::Pointer minmaxFilter = MinMaxFilterType::New();
-			minmaxFilter->SetImage(filter->GetOutput());
+			 //indexRadius[0] = 5; // radius along x
+			 //indexRadius[1] = 5; // radius along y
+
+			 //
+			 //using MedianFilterType = itk::MedianImageFilter<GrayscaleImageType,GrayscaleImageType>;
+			 //MedianFilterType::Pointer medianFilter = MedianFilterType::New();
+			 //medianFilter->SetInput(tresholdFilter->GetOutput());
+			 //medianFilter->SetRadius(indexRadius);
+
+			 using FilterTypeOtsu = itk::OtsuMultipleThresholdsImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			 FilterTypeOtsu::Pointer filterOtsu = FilterTypeOtsu::New();
+			 filterOtsu->SetInput(tresholdFilter->GetOutput()); 
+			 filterOtsu->SetNumberOfThresholds(4);
+			 filterOtsu->SetLabelOffset(2);
+			 filterOtsu->SetNumberOfHistogramBins(200);
 			
-			std::cout << minmaxFilter->GetMaximum();
+			 FilterTypeOtsu::ThresholdVectorType thresholds = filterOtsu->GetThresholds();			
+			 std::cout << "Thresholds:" << std::endl;
+
+			 for (double threshold : thresholds)
+			 {
+				 std::cout << threshold << std::endl;
+			 }
+
+			 std::cout << std::endl;
+			 using RescaleType = itk::RescaleIntensityImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			 RescaleType::Pointer rescaler = RescaleType::New();
+			 rescaler->SetInput(filterOtsu->GetOutput());
+			 rescaler->SetOutputMinimum(0);
+			 rescaler->SetOutputMaximum(255);
 
 			using WriterType = itk::ImageFileWriter<GrayscaleImageType>;
 			WriterType::Pointer writer = WriterType::New();
 			writer->SetFileName(sciezkaWy);
-			writer->SetInput(tresholdFilter->GetOutput());
+			writer->SetInput(rescaler->GetOutput());
 			writer->Update();
 
-
+		
 
 
 
