@@ -30,7 +30,10 @@
 
 #include <itkInvertIntensityImageFilter.h>
 #include<itkMaskImageFilter.h>
-
+#include <itkNormalizeImageFilter.h>
+#include <itkDoubleThresholdImageFilter.h>
+#include <itkMultiplyImageFilter.h>
+#include <itkSubtractImageFilter.h>
 
 int main() // glowna funkcja programu
 {	      
@@ -45,7 +48,7 @@ int main() // glowna funkcja programu
 
 
 			std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/"+s+".jpg";
-			std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/kopia"+s+".tiff";
+			std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/kopia"+s+".jpg";
 			std::string sciezkaWyhistogram = "F:/Projekt-pomwjo/wyniki/histogram" + s + ".tiff";
 
 
@@ -57,158 +60,230 @@ int main() // glowna funkcja programu
 			using ReaderType = itk::ImageFileReader<RGBImageType>;
 			ReaderType::Pointer reader = ReaderType::New();
 
-
+			
 			reader->SetFileName(sciezkaWe);
 			reader->Update();
 
-			using OutputPixelType = unsigned char;
+			using OutputPixelType = float;
 			using GrayscaleImageType = itk::Image<OutputPixelType, 2>;
+			using OutputPixelType2 = unsigned char;
+			using GrayscaleImageType2 = itk::Image<OutputPixelType2, 2>;
 
 			using FilterType = itk::RGBToLuminanceImageFilter<RGBImageType, GrayscaleImageType>;
 			FilterType::Pointer filter = FilterType::New();
 			filter->SetInput(reader->GetOutput());
 
-			using BinaryPixelType = unsigned char;
-			using BinaryImageType = itk::Image<BinaryPixelType, 2>;
+
+
 
 			
-			
-			using TresholdFilterType = itk::ThresholdImageFilter<GrayscaleImageType>;
-			 TresholdFilterType::Pointer tresholdFilter = TresholdFilterType::New();
-			 tresholdFilter->SetInput(filter->GetOutput());
-			 //tresholdFilter->ThresholdAbove(256*0.7);
 
-			 tresholdFilter->SetUpper(256 * 0.68);
-			 tresholdFilter->SetOutsideValue(0); // zamien na -1024
-		/*	 filter->ThresholdAbove(300);
-			 filter->ThresholdBelow(100);
-			filter->ThresholdOutside(100,300)*/
-			 GrayscaleImageType::SizeType indexRadius;
+			using RescaleType = itk::RescaleIntensityImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			RescaleType::Pointer rescaler = RescaleType::New();
+			rescaler->SetInput(filter->GetOutput());
+			rescaler->SetOutputMinimum(0);
+			rescaler->SetOutputMaximum(255);
+			
+		//	using TresholdFilterType = itk::ThresholdImageFilter<GrayscaleImageType>;
+		//	 TresholdFilterType::Pointer tresholdFilter = TresholdFilterType::New();
+		//	 tresholdFilter->SetInput(rescaler->GetOutput());
+		//	 //tresholdFilter->ThresholdAbove(256*0.7);
+
+		//	 tresholdFilter->SetUpper(256 * 0.68);
+		//	 tresholdFilter->SetOutsideValue(0); // zamien na -1024
+		///*	 filter->ThresholdAbove(300);
+		//	 filter->ThresholdBelow(100);
+		//	filter->ThresholdOutside(100,300)*/
+
+			using DoubleThresholdFilterType = itk::DoubleThresholdImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			DoubleThresholdFilterType::Pointer doubleThresholdFilter = DoubleThresholdFilterType::New();
+			doubleThresholdFilter->SetInput(rescaler->GetOutput());
+			doubleThresholdFilter->SetFullyConnected(true);
+			doubleThresholdFilter->SetThreshold1(152);
+			doubleThresholdFilter->SetThreshold2(180);
+			doubleThresholdFilter->SetThreshold3(250);
+			doubleThresholdFilter->SetThreshold4(255);
+			doubleThresholdFilter->SetOutsideValue(0);
+			doubleThresholdFilter->SetInsideValue(255);
+
+			GrayscaleImageType::SizeType indexRadius;
 
 			 indexRadius[0] =1; // radius along x
 			 indexRadius[1] = 3; // radius along y
-
-			 //
+			
 			 using MedianFilterType = itk::MedianImageFilter<GrayscaleImageType,GrayscaleImageType>;
 			 MedianFilterType::Pointer medianFilter = MedianFilterType::New();
-			 medianFilter->SetInput(tresholdFilter->GetOutput());
+			 medianFilter->SetInput(doubleThresholdFilter->GetOutput());
 			 medianFilter->SetRadius(indexRadius);
 			 
-			 using BinaryTresholdFilterType = itk::BinaryThresholdImageFilter<GrayscaleImageType,GrayscaleImageType>;
-			 BinaryTresholdFilterType::Pointer binarytresholdFilter = BinaryTresholdFilterType::New();
-			 binarytresholdFilter->SetInput(medianFilter->GetOutput());
-			 //tresholdFilter->ThresholdAbove(256*0.7);
-
-			 binarytresholdFilter->SetUpperThreshold(0.0001);
-		
-					 // zamien na -1024
-			 binarytresholdFilter->SetOutsideValue(0);
+			 
+			
 
 			 using StructuringElementType = itk::FlatStructuringElement<2>;
-			 using StructuringElementTypeball = itk::FlatStructuringElement<2>;
+			
 
-			 StructuringElementTypeball::RadiusType radiusball;
-			 radiusball.Fill(25);
-			 StructuringElementTypeball structuringElementball = StructuringElementTypeball::Ball(radiusball);
+			 StructuringElementType::RadiusType radiusball;
+			 radiusball.Fill(15);
+			 StructuringElementType structuringElementball = StructuringElementType::Ball(radiusball);
 
 			 StructuringElementType::RadiusType radius;
-			 radius.Fill(25);
+			 radius.Fill(15);
 			 StructuringElementType structuringElement = StructuringElementType::Box(radius);
 
-			 
+			 StructuringElementType::RadiusType radiusPolygon;
+			 radiusPolygon.Fill(23);
+			 StructuringElementType::RadiusType radiusPolygon2;
+			 radiusPolygon2.Fill(35);
+			 StructuringElementType::RadiusType radiusPolygon3;
+			 radiusPolygon3.Fill(50);
+			 StructuringElementType::RadiusType radiusPolygon4;
+			 radiusPolygon4.Fill(25);
+
+			 StructuringElementType structuringElementpolygon = StructuringElementType::Polygon(radiusPolygon,3);
+			 StructuringElementType structuringElementpolygon2 = StructuringElementType::Polygon(radiusPolygon2, 2);
+			 StructuringElementType structuringElementpolygon3 = StructuringElementType::Polygon(radiusPolygon3, 6);
+			 StructuringElementType structuringElementpolygon4 = StructuringElementType::Polygon(radiusPolygon4, 9);
+
+			 using ErodeImageFilter =itk::BinaryErodeImageFilter<GrayscaleImageType, GrayscaleImageType, StructuringElementType>;
+			 ErodeImageFilter::Pointer erode = ErodeImageFilter::New();
+			 erode->SetInput(medianFilter->GetOutput());
+			 erode->SetKernel(structuringElementpolygon);
+			 erode->SetForegroundValue(255);
+			 erode->Update();
+		
 			 using DilateImageFilter = itk::BinaryDilateImageFilter<GrayscaleImageType, GrayscaleImageType, StructuringElementType>;
 			 DilateImageFilter::Pointer dilate = DilateImageFilter::New();
-			 dilate->SetInput(binarytresholdFilter->GetOutput());
-			 dilate->SetKernel(structuringElementball);
-			 dilate->SetForegroundValue(1);
+			 dilate->SetInput(erode->GetOutput());
+			 dilate->SetKernel(structuringElementpolygon2);
+			 dilate->SetForegroundValue(255);
 			 dilate->Update();
 		
+			 using ClosingImageFilter = itk::BinaryMorphologicalClosingImageFilter<GrayscaleImageType, GrayscaleImageType, StructuringElementType>;
+			 ClosingImageFilter::Pointer closing = ClosingImageFilter::New();
+			 closing->SetInput(dilate->GetOutput());
+			 closing->SetKernel(structuringElementpolygon3);
+			 closing->SetForegroundValue(255);
+			 closing->Update();
 
-		
+			 using DilateImageFilter2 = itk::BinaryDilateImageFilter<GrayscaleImageType, GrayscaleImageType, StructuringElementType>;
+			 DilateImageFilter2::Pointer dilate2 = DilateImageFilter2::New();
+			 dilate2->SetInput(closing->GetOutput());
+			 dilate2->SetKernel(structuringElementball);
+			 dilate2->SetForegroundValue(255);
+			 dilate2->Update();
+
+			 using ClosingImageFilter2 = itk::BinaryMorphologicalClosingImageFilter<GrayscaleImageType, GrayscaleImageType, StructuringElementType>;
+			 ClosingImageFilter2::Pointer closing2 = ClosingImageFilter2::New();
+			 closing2->SetInput(dilate2->GetOutput());
+			 closing2->SetKernel(structuringElementpolygon4);
+			 closing2->SetForegroundValue(255);
+			 closing2->Update();
+
+		/*	 using BinaryTresholdFilterType = itk::BinaryThresholdImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			 BinaryTresholdFilterType::Pointer binarytresholdFilter = BinaryTresholdFilterType::New();
+			 binarytresholdFilter->SetInput(closing2->GetOutput());
+			 binarytresholdFilter->SetOutsideValue(1);
+			 binarytresholdFilter->SetInsideValue(0);
+			 binarytresholdFilter->SetLowerThreshold(200);
+			 binarytresholdFilter->Update();*/
+
+			/* using FilterTypeRescaler = itk::RescaleIntensityImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			 FilterTypeRescaler::Pointer filterRescaler = FilterTypeRescaler::New();
+			 filterRescaler->SetInput(closing2->GetOutput());
+			 filterRescaler->SetOutputMinimum(0);
+			 filterRescaler->SetOutputMaximum(1);
 
 			using InvertFilterType = itk::InvertIntensityImageFilter<GrayscaleImageType, GrayscaleImageType>;
 			InvertFilterType::Pointer invertFilter = InvertFilterType::New();
-			invertFilter->SetInput(dilate->GetOutput());
+			invertFilter->SetInput(filterRescaler->GetOutput());
 			invertFilter->Update();
+		/*	 using NegativeFilterType = itk::ExpNegativeImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			 NegativeFilterType::Pointer negativeFilter = NegativeFilterType::New();
+			negativeFilter->SetInput(filter->GetOutput());
+			negativeFilter->SetFactor(1);*/
 
 			using MaskerType = itk::MaskImageFilter<GrayscaleImageType, GrayscaleImageType>;
 			MaskerType::Pointer maskFilter = MaskerType::New();
-			maskFilter->SetInput1(filter->GetOutput());
-			maskFilter->SetInput2(invertFilter->GetOutput());
+			maskFilter->SetInput(filter->GetOutput());
+			maskFilter->SetMaskImage(closing2->GetOutput());
 			maskFilter->SetOutsideValue(0);
-			maskFilter->Update();
+			maskFilter->Update();	
 
-			//using FilterTypeNegation = itk::ExpNegativeImageFilter<GrayscaleImageType, GrayscaleImageType>;
-			//FilterTypeNegation::Pointer negateFilter = FilterTypeNegation::New();
-			//negateFilter->SetInput(maska);
-			//negateFilter->Update();
-
-
-		/*	 using ConstIteratorType = itk::ImageRegionConstIterator< GrayscaleImageType>;
-			 using IteratorType = itk::ImageRegionIterator< GrayscaleImageType >;
-			 
-
-			 ConstIteratorType constIterator(image2, image2->GetRequestedRegion());
-			 IteratorType iterator(image, image->GetRequestedRegion());
-			
-			 unsigned char jedynka = 1;
-			 unsigned char zero = 0;
-
-			 for (iterator.GoToBegin(), constIterator.GoToBegin(); !iterator.IsAtEnd(); ++constIterator, ++iterator)
-			 {
-				 if (constIterator.Get() == jedynka) {
-					 iterator.Set(zero);
-				 }
-			 }
-
-			 */
-
-			
-
-		/*		using ErodeImageFilter =itk::BinaryErodeImageFilter<GrayscaleImageType, GrayscaleImageType, StructuringElementType>;
-			 ErodeImageFilter::Pointer erode = ErodeImageFilter::New();
-			 erode->SetInput(dilate->GetOutput());
-			 erode->SetKernel(structuringElementball);
-			 erode->SetForegroundValue(1);
-			 erode->Update();*/
+			using SubtractImageFilterType = itk::SubtractImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			SubtractImageFilterType::Pointer subtractFilter = SubtractImageFilterType::New();
+			subtractFilter->SetInput1(filter->GetOutput());
+			subtractFilter->SetInput2(maskFilter->GetOutput());
+			subtractFilter->Update();
 
 
-			/* using SigmoidFilterType = itk::SigmoidImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			/*using DoubleThresholdFilterType2 = itk::DoubleThresholdImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			DoubleThresholdFilterType2::Pointer doubleThresholdFilter2 = DoubleThresholdFilterType2::New();
+			doubleThresholdFilter2->SetInput(maskFilter->GetOutput());
+			doubleThresholdFilter2->SetFullyConnected(true);
+			doubleThresholdFilter2->SetThreshold1(120);
+			doubleThresholdFilter2->SetThreshold2(125);
+			doubleThresholdFilter2->SetThreshold3(128);
+			doubleThresholdFilter2->SetThreshold4(130);
+			doubleThresholdFilter2->SetOutsideValue(0);
+			doubleThresholdFilter2->SetInsideValue(255);*/
+			/*using SigmoidFilterType = itk::SigmoidImageFilter<GrayscaleImageType, GrayscaleImageType>;
 			 SigmoidFilterType::Pointer sigmoidFilter = SigmoidFilterType::New();
-			 sigmoidFilter->SetInput(tresholdFilter->GetOutput());
+			 sigmoidFilter->SetInput(doubleThresholdFilter2->GetOutput());
 			 sigmoidFilter->SetOutputMinimum(10);
-			 sigmoidFilter->SetOutputMaximum(240);
-			 sigmoidFilter->SetAlpha(60);
-			 sigmoidFilter->SetBeta(170);*/
-
-
-
-	/*		 using FilterTypeOtsu = itk::OtsuMultipleThresholdsImageFilter<GrayscaleImageType, GrayscaleImageType>;
-			 FilterTypeOtsu::Pointer filterOtsu = FilterTypeOtsu::New();
-			 filterOtsu->SetInput(tresholdFilter->GetOutput()); 
-			 filterOtsu->SetNumberOfThresholds(4);
-			 filterOtsu->SetLabelOffset(2);
-			 filterOtsu->SetNumberOfHistogramBins(200);*/
+			 sigmoidFilter->SetOutputMaximum(250);
 			
-		/* FilterTypeOtsu::ThresholdVectorType thresholds = filterOtsu->GetThresholds();			
-			 std::cout << "Thresholds:" << std::endl;
+			 sigmoidFilter->SetAlpha(-100);
+			 sigmoidFilter->SetBeta(50);*/
+			using IntensityWindowingImageFilterType = itk::IntensityWindowingImageFilter<GrayscaleImageType, GrayscaleImageType>;
 
-			 for (double threshold : thresholds)
-			 {
-				 std::cout << threshold << std::endl;
-			 }
+			IntensityWindowingImageFilterType::Pointer intensityFilter = IntensityWindowingImageFilterType::New();
+			intensityFilter->SetInput(subtractFilter->GetOutput());
+			intensityFilter->SetWindowMinimum(77);
+			intensityFilter->SetWindowLevel(72,114);
+			intensityFilter->SetWindowMaximum(145);
+			intensityFilter->SetOutputMinimum(0);
+			intensityFilter->SetOutputMaximum(255);
+			intensityFilter->Update();
 
-			std::cout << std::endl;
-			 using RescaleType = itk::RescaleIntensityImageFilter<GrayscaleImageType, GrayscaleImageType>;
-			 RescaleType::Pointer rescaler = RescaleType::New();
+
+	
+
+
+			 using FilterTypeOtsu = itk::OtsuMultipleThresholdsImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			 FilterTypeOtsu::Pointer filterOtsu = FilterTypeOtsu::New();
+			 filterOtsu->SetInput(intensityFilter->GetOutput()); 
+			 filterOtsu->SetNumberOfThresholds(4);
+			 filterOtsu->SetLabelOffset(1);
+			 filterOtsu->SetNumberOfHistogramBins(255);
+			 
+			
+		 FilterTypeOtsu::ThresholdVectorType thresholds = filterOtsu->GetThresholds();	
+
+		 using RescaleType2 = itk::RescaleIntensityImageFilter<GrayscaleImageType, GrayscaleImageType>;
+		 RescaleType2::Pointer rescaler2 = RescaleType2::New();
+		 rescaler2->SetInput(filterOtsu->GetOutput());
+		 rescaler2->SetOutputMinimum(0);
+		 rescaler2->SetOutputMaximum(255);
+
+		 using CastFilterType = itk::CastImageFilter<GrayscaleImageType, GrayscaleImageType2>;
+		 CastFilterType::Pointer castFilter = CastFilterType::New();
+		 castFilter->SetInput(rescaler2->GetOutput());
+			/*
 			 rescaler->SetInput(filterOtsu->GetOutput());
 			 rescaler->SetOutputMinimum(0);
-			 rescaler->SetOutputMaximum(255);*/
+			 rescaler->SetOutputMaximum(255);
+			 using FilterTypeW = itk::IntensityWindow0ingImageFilter<GrayscaleImageType, GrayscaleImageType>;
+			FilterTypeW::Pointer filter2 = FilterTypeW::New();
+			filter2->SetInput(rescaler->GetOutput());
+			filter2->SetWindowMaximum(80);
+			filter2->SetWindowMinimum(40);
+			filter2->SetOutputMaximum(250);
+			filter2->SetOutputMinimum(0);*/
 
-			using WriterType = itk::ImageFileWriter<BinaryImageType>;
+			using WriterType = itk::ImageFileWriter<GrayscaleImageType2>;
 			WriterType::Pointer writer = WriterType::New();
 			writer->SetFileName(sciezkaWy);
-			writer->SetInput(maskFilter->GetOutput());
+			writer->SetInput(castFilter->GetOutput());
 			writer->Update();
 
 		
@@ -224,22 +299,10 @@ int main() // glowna funkcja programu
 
 
 
-			//using FilterTypeW = itk::IntensityWindowingImageFilter<OutputImageType, OutputImageType>;
-			//FilterTypeW::Pointer filter2 = FilterTypeW::New();
-			////filter2->SetInput(reader->GetOutput());
-			////filter2->SetWindowMaximum(200);
-			////filter2->SetWindowMinimum(128);
-			////filter2->SetOutputMaximum(155);
-		 ////   filter2->SetOutputMinimum(0);
-			//filter2->SetWindowLevel(255 + 25, (255 - 25) / 2);
-			//filter2->SetInput(filter->GetOutput());
+			
+			
 
-			//using FilterTypee = itk::ThresholdImageFilter<OutputImageType>;
-			//FilterTypee::Pointer filter1 = FilterTypee::New();
-			//filter1->SetLower(90);
-			//filter1->SetInput(filter->GetOutput());
-			//filter1->SetOutsideValue(-1048);
-
+			
 
 
 			
