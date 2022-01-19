@@ -34,6 +34,8 @@
 #include <itkDoubleThresholdImageFilter.h>
 #include <itkMultiplyImageFilter.h>
 #include <itkSubtractImageFilter.h>
+#include <itkHoughTransform2DCirclesImageFilter.h>
+#include <itkLabelSelectionLabelMapFilter.h>
 
 int main() // glowna funkcja programu
 {	      
@@ -48,7 +50,7 @@ int main() // glowna funkcja programu
 
 
 			std::string sciezkaWe = "F:/Projekt-pomwjo/dane/Szczeniory/"+s+".jpg";
-			std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/kopia"+s+".jpg";
+			std::string sciezkaWy = "F:/Projekt-pomwjo/wyniki/kopia"+s+".tiff";
 			std::string sciezkaWyhistogram = "F:/Projekt-pomwjo/wyniki/histogram" + s + ".tiff";
 
 
@@ -64,9 +66,9 @@ int main() // glowna funkcja programu
 			reader->SetFileName(sciezkaWe);
 			reader->Update();
 
-			using OutputPixelType = float;
+			using OutputPixelType = short;
 			using GrayscaleImageType = itk::Image<OutputPixelType, 2>;
-			using OutputPixelType2 = unsigned char;
+			using OutputPixelType2 = signed short;
 			using GrayscaleImageType2 = itk::Image<OutputPixelType2, 2>;
 
 			using FilterType = itk::RGBToLuminanceImageFilter<RGBImageType, GrayscaleImageType>;
@@ -215,6 +217,14 @@ int main() // glowna funkcja programu
 			subtractFilter->SetInput2(maskFilter->GetOutput());
 			subtractFilter->Update();
 
+		
+
+			//using HoughTransformFilterType = itk::HoughTransform2DCirclesImageFilter<OutputPixelType,OutputPixelType,double>;
+
+			//auto houghFilter = HoughTransformFilterType::New();
+			//houghFilter->SetInput(subtractFilter->GetOutput());
+			//const auto& spatialObject=houghFilter->GetCircles().;
+			//spatialObject->ComputeObjectToWorldTransform();
 
 			/*using DoubleThresholdFilterType2 = itk::DoubleThresholdImageFilter<GrayscaleImageType, GrayscaleImageType>;
 			DoubleThresholdFilterType2::Pointer doubleThresholdFilter2 = DoubleThresholdFilterType2::New();
@@ -263,22 +273,33 @@ int main() // glowna funkcja programu
 		 RescaleType2::Pointer rescaler2 = RescaleType2::New();
 		 rescaler2->SetInput(filterOtsu->GetOutput());
 		 rescaler2->SetOutputMinimum(0);
-		 rescaler2->SetOutputMaximum(255);
-
-		 using CastFilterType = itk::CastImageFilter<GrayscaleImageType, GrayscaleImageType2>;
+		 rescaler2->SetOutputMaximum(255); 
+		 
+		 
+		using CastFilterType = itk::CastImageFilter<GrayscaleImageType, GrayscaleImageType2>;
 		 CastFilterType::Pointer castFilter = CastFilterType::New();
-		 castFilter->SetInput(rescaler2->GetOutput());
-			/*
-			 rescaler->SetInput(filterOtsu->GetOutput());
-			 rescaler->SetOutputMinimum(0);
-			 rescaler->SetOutputMaximum(255);
-			 using FilterTypeW = itk::IntensityWindow0ingImageFilter<GrayscaleImageType, GrayscaleImageType>;
-			FilterTypeW::Pointer filter2 = FilterTypeW::New();
-			filter2->SetInput(rescaler->GetOutput());
-			filter2->SetWindowMaximum(80);
-			filter2->SetWindowMinimum(40);
-			filter2->SetOutputMaximum(250);
-			filter2->SetOutputMinimum(0);*/
+		 castFilter->SetInput(maskFilter->GetOutput());
+
+		 using LabelObjectType = itk::LabelObject<OutputPixelType2, 2>;
+		 using LabelMapType = itk::LabelMap<LabelObjectType>;
+
+		using LabImgToLabMapType = itk::LabelImageToLabelMapFilter<GrayscaleImageType2,LabelMapType>;
+			LabImgToLabMapType::Pointer img2map = LabImgToLabMapType::New();
+			img2map->SetInput(castFilter->GetOutput());
+			img2map->SetBackgroundValue(itk::NumericTraits<OutputPixelType2>::Zero);
+			img2map->Update();
+
+			using SelectorType = itk::LabelSelectionLabelMapFilter<LabelMapType>;
+			SelectorType::Pointer selector = SelectorType::New();
+			selector->SetInput(img2map->GetOutput());
+			selector->SetLabel(1);
+			
+			
+			using LabelMapToLabelImageFilterType = itk::LabelMapToLabelImageFilter<LabelMapType, GrayscaleImageType2>;
+			LabelMapToLabelImageFilterType::Pointer labelImageConverter = LabelMapToLabelImageFilterType::New();
+			labelImageConverter->SetInput(selector->GetOutput());
+
+		
 
 			using WriterType = itk::ImageFileWriter<GrayscaleImageType2>;
 			WriterType::Pointer writer = WriterType::New();
